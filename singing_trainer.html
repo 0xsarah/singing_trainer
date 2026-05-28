@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>声乐训练台</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0d0d14;
+    --surface: #161622;
+    --card: #1e1e30;
+    --accent: #c8a96e;
+    --accent2: #6eb5c8;
+    --inhale: #6eb5c8;
+    --exhale: #c86e8a;
+    --text: #e8e0d0;
+    --muted: #6b6880;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Serif SC', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+  }
+  .everything { width: 100%; max-width: 860px; }
+  h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-align: center;
+    margin-bottom: 4px;
+    text-shadow: 0 0 40px rgba(200,169,110,0.35);
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.8rem;
+    letter-spacing: 0.22em;
+    margin-bottom: 28px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  @media(max-width:600px){ .grid { grid-template-columns: 1fr; } .span2 { grid-column: span 1; } }
+  .card {
+    background: var(--card);
+    border: 1px solid rgba(200,169,110,0.12);
+    border-radius: 12px;
+    padding: 22px;
+  }
+  .span2 { grid-column: span 2; }
+  .card-title {
+    font-size: 0.68rem;
+    letter-spacing: 0.28em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(200,169,110,0.09);
+  }
+
+  /* METRONOME */
+  .metro-center { display:flex; flex-direction:column; align-items:center; gap:14px; }
+  .bpm-display {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 4rem;
+    color: var(--accent);
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(200,169,110,0.45);
+    transition: text-shadow .08s;
+  }
+  .bpm-display.flash { text-shadow: 0 0 60px rgba(200,169,110,1), 0 0 20px rgba(200,169,110,.8); }
+  .bpm-label { font-size:0.65rem; color:var(--muted); letter-spacing:.3em; margin-top:-8px; }
+  .slider-row { display:flex; align-items:center; gap:10px; width:100%; }
+  input[type=range] {
+    -webkit-appearance:none; flex:1; height:3px;
+    background: linear-gradient(to right, var(--accent) var(--pct,40%), rgba(200,169,110,.18) var(--pct,40%));
+    border-radius:2px; outline:none; cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance:none; width:15px; height:15px; border-radius:50%;
+    background:var(--accent); cursor:pointer;
+    box-shadow: 0 0 10px rgba(200,169,110,.6);
+  }
+  .sval { font-family:'Bebas Neue',sans-serif; font-size:0.85rem; color:var(--muted); min-width:24px; text-align:right; }
+  .sig-row { display:flex; align-items:center; gap:7px; font-size:0.75rem; color:var(--muted); flex-wrap:wrap; justify-content:center; }
+  .sig-btn {
+    background:transparent; border:1px solid rgba(200,169,110,.2); color:var(--text);
+    border-radius:6px; padding:4px 9px; cursor:pointer;
+    font-family:'Noto Serif SC',serif; font-size:0.76rem; transition:all .2s;
+  }
+  .sig-btn.active { background:rgba(200,169,110,.14); border-color:var(--accent); color:var(--accent); }
+  .beat-dots { display:flex; gap:9px; justify-content:center; }
+  .beat-dot {
+    width:11px; height:11px; border-radius:50%;
+    background:rgba(200,169,110,.12); border:1px solid rgba(200,169,110,.28);
+    transition:background .05s, box-shadow .05s;
+  }
+  .beat-dot.active { background:var(--accent); box-shadow:0 0 10px var(--accent); }
+  .beat-dot.ab { border-color:var(--accent2); }
+  .beat-dot.ab.active { background:var(--accent2); box-shadow:0 0 10px var(--accent2); }
+  .sound-row { display:flex; align-items:center; gap:9px; font-size:0.72rem; color:var(--muted); flex-wrap:wrap; justify-content:center; }
+  .toggle { width:34px; height:19px; background:rgba(200,169,110,.12); border-radius:10px; position:relative; cursor:pointer; border:1px solid rgba(200,169,110,.25); transition:background .2s; flex-shrink:0; }
+  .toggle.on { background:rgba(200,169,110,.38); }
+  .toggle::after { content:''; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%; background:var(--muted); transition:transform .2s,background .2s; }
+  .toggle.on::after { transform:translateX(15px); background:var(--accent); }
+
+  /* BREATH SETTINGS */
+  .breath-row { display:flex; gap:10px; }
+  .bblock { flex:1; background:var(--surface); border-radius:8px; padding:14px; border:1px solid transparent; }
+  .bblock.ib { border-color:rgba(110,181,200,.2); }
+  .bblock.eb { border-color:rgba(200,110,138,.2); }
+  .blabel { font-size:0.62rem; letter-spacing:.22em; text-transform:uppercase; margin-bottom:8px; font-weight:700; }
+  .ilabel { color:var(--inhale); }
+  .elabel { color:var(--exhale); }
+  .bnum { font-family:'Bebas Neue',sans-serif; font-size:2.4rem; line-height:1; margin-bottom:6px; }
+  .inum { color:var(--inhale); }
+  .enum { color:var(--exhale); }
+  .bunit { font-size:0.62rem; color:var(--muted); margin-bottom:10px; }
+  input[type=number] {
+    background:var(--card); border:1px solid rgba(255,255,255,.1); border-radius:6px;
+    color:var(--text); font-family:'Noto Serif SC',serif; font-size:0.88rem;
+    padding:5px 9px; width:100%; outline:none; transition:border-color .2s;
+  }
+  input[type=number]:focus { border-color:var(--accent); }
+
+  /* BREATH VISUALIZER */
+  .vis-inner { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+  .circ-wrap { position:relative; width:130px; height:130px; flex-shrink:0; }
+  .circ-wrap svg { position:absolute; inset:0; transform:rotate(-90deg); }
+  .cbg { fill:none; stroke:rgba(255,255,255,.05); stroke-width:6; }
+  .cprog { fill:none; stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset .35s linear,stroke .5s; }
+  .ctext { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+  .bcount { font-family:'Bebas Neue',sans-serif; font-size:2.2rem; line-height:1; transition:color .5s; }
+  .bphase { font-size:0.58rem; letter-spacing:.18em; text-transform:uppercase; transition:color .5s; }
+  .vis-info { flex:1; min-width:180px; }
+  .bbar-wrap { margin-bottom:11px; }
+  .bbar-label { display:flex; justify-content:space-between; font-size:0.67rem; color:var(--muted); margin-bottom:5px; }
+  .bbar-track { height:5px; background:rgba(255,255,255,.05); border-radius:3px; overflow:hidden; }
+  .bbar-fill { height:100%; border-radius:3px; transition:width .35s linear; }
+  .ifill { background:var(--inhale); box-shadow:0 0 7px var(--inhale); }
+  .efill { background:var(--exhale); box-shadow:0 0 7px var(--exhale); }
+  .btip { font-size:0.77rem; color:var(--muted); line-height:1.65; font-style:italic; }
+
+  /* CONTROLS */
+  .ctrls { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
+  .btn { font-family:'Bebas Neue',sans-serif; font-size:1.05rem; letter-spacing:.12em; border:none; border-radius:8px; padding:11px 28px; cursor:pointer; transition:all .2s; }
+  .bp { background:var(--accent); color:var(--bg); }
+  .bp:hover { background:#d4b87a; transform:translateY(-1px); box-shadow:0 4px 18px rgba(200,169,110,.4); }
+  .bs { background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  .bs:hover { background:rgba(200,169,110,.1); }
+  .bd { background:transparent; color:#c86e6e; border:1px solid rgba(200,110,110,.35); }
+  .bd:hover { background:rgba(200,110,110,.1); }
+</style>
+</head>
+<body>
+<div class="everything">
+  <h1>声乐训练台</h1>
+  <p class="subtitle">节拍器 · 呼吸练习 · 演唱辅助</p>
+
+  <div class="grid">
+    <!-- METRONOME -->
+    <div class="card">
+      <div class="card-title">节拍器</div>
+      <div class="metro-center">
+        <div class="bpm-display" id="bpmDisplay">120</div>
+        <div class="bpm-label">BPM</div>
+        <div class="slider-row">
+          <span class="sval">40</span>
+          <input type="range" id="bpmSlider" min="40" max="240" value="120" oninput="updateBPM(this.value)">
+          <span class="sval">240</span>
+        </div>
+        <div class="sig-row">
+          拍号：
+          <button class="sig-btn" onclick="setSig(2,this)">2/4</button>
+          <button class="sig-btn" onclick="setSig(3,this)">3/4</button>
+          <button class="sig-btn active" onclick="setSig(4,this)">4/4</button>
+          <button class="sig-btn" onclick="setSig(6,this)">6/8</button>
+        </div>
+        <div class="beat-dots" id="beatDots"></div>
+        <div class="sound-row">
+          <div class="toggle on" id="soundToggle" onclick="toggleSound(this)"></div> 节拍音效
+          <div class="toggle" id="syncToggle" onclick="toggleSync(this)" style="margin-left:10px"></div> 与呼吸同步
+        </div>
+      </div>
+    </div>
+
+    <!-- BREATH SETTINGS -->
+    <div class="card">
+      <div class="card-title">呼吸设置</div>
+      <div class="breath-row">
+        <div class="bblock ib">
+          <div class="blabel ilabel">吸气</div>
+          <div class="bnum inum" id="inhaleDisp">4</div>
+          <div class="bunit">秒（倒数）</div>
+          <input type="number" id="inhaleIn" min="1" max="30" value="4" oninput="updateBreath()">
+        </div>
+        <div class="bblock eb">
+          <div class="blabel elabel">呼气</div>
+          <div class="bnum enum" id="exhaleDisp">6</div>
+          <div class="bunit">秒（正数）</div>
+          <input type="number" id="exhaleIn" min="1" max="30" value="6" oninput="updateBreath()">
+        </div>
+      </div>
+      <div style="margin-top:13px;font-size:0.73rem;color:var(--muted);line-height:1.7">
+        💡 吸气：从设定秒数<strong style="color:var(--inhale)">倒数</strong>至 1；呼气：从 1
+        <strong style="color:var(--exhale)">正数</strong>至设定秒数，帮助精准掌握气息节奏。
+      </div>
+    </div>
+
+    <!-- VISUALIZER -->
+    <div class="card span2">
+      <div class="card-title">呼吸可视化</div>
+      <div class="vis-inner">
+        <div class="circ-wrap">
+          <svg viewBox="0 0 130 130">
+            <circle class="cbg" cx="65" cy="65" r="54"/>
+            <circle class="cprog" id="prog" cx="65" cy="65" r="54"
+              stroke="var(--inhale)"
+              stroke-dasharray="339.3"
+              stroke-dashoffset="339.3"/>
+          </svg>
+          <div class="ctext">
+            <div class="bcount" id="bCount" style="color:var(--inhale)">—</div>
+            <div class="bphase" id="bPhase" style="color:var(--muted)">等待开始</div>
+          </div>
+        </div>
+
+        <div class="vis-info">
+          <div class="bbar-wrap">
+            <div class="bbar-label"><span>🌬️ 吸气</span><span id="iPct">0%</span></div>
+            <div class="bbar-track"><div class="bbar-fill ifill" id="iBar" style="width:0%"></div></div>
+          </div>
+          <div class="bbar-wrap">
+            <div class="bbar-label"><span>🎵 呼气</span><span id="ePct">0%</span></div>
+            <div class="bbar-track"><div class="bbar-fill efill" id="eBar" style="width:0%"></div></div>
+          </div>
+          <div class="btip" id="tip">按「开始呼吸」进行气息辅助训练，搭配节拍器效果更佳。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ctrls">
+    <button class="btn bp" id="metroBtn" onclick="toggleMetro()">▶ 开始节拍</button>
+    <button class="btn bs" id="breathBtn" onclick="toggleBreath()">🌬️ 开始呼吸</button>
+    <button class="btn bd" onclick="stopAll()">■ 全部停止</button>
+  </div>
+</div>
+
+<script>
+let bpm=120, beats=4, curBeat=0;
+let metroOn=false, metroTick=null;
+let soundOn=true, syncOn=false;
+let breathOn=false, breathTimer=null;
+let phase='inhale', cnt=0;
+let iSec=4, eSec=6;
+let audioCtx=null;
+const CIRC=2*Math.PI*54; // 339.3
+
+function getCtx(){
+  if(!audioCtx) audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return audioCtx;
+}
+function click(accent){
+  if(!soundOn) return;
+  try{
+    const c=getCtx(), o=c.createOscillator(), g=c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.frequency.value=accent?1180:780;
+    g.gain.setValueAtTime(accent?.38:.18, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001, c.currentTime+.09);
+    o.start(c.currentTime); o.stop(c.currentTime+.09);
+  }catch(e){}
+}
+
+function updateBPM(v){
+  bpm=+v;
+  document.getElementById('bpmDisplay').textContent=bpm;
+  const pct=((bpm-40)/200*100).toFixed(1)+'%';
+  document.getElementById('bpmSlider').style.setProperty('--pct',pct);
+  if(metroOn){stopMetro();startMetro();}
+}
+function setSig(b,btn){
+  beats=b; curBeat=0;
+  document.querySelectorAll('.sig-btn').forEach(x=>x.classList.remove('active'));
+  btn.classList.add('active');
+  buildDots();
+}
+function buildDots(){
+  const c=document.getElementById('beatDots'); c.innerHTML='';
+  for(let i=0;i<beats;i++){
+    const d=document.createElement('div');
+    d.className='beat-dot'+(i===0?' ab':'');
+    d.id='d'+i; c.appendChild(d);
+  }
+}
+function flashDot(b){
+  document.querySelectorAll('.beat-dot').forEach((d,i)=>d.classList.toggle('active',i===b));
+  const el=document.getElementById('bpmDisplay');
+  el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),80);
+}
+function startMetro(){
+  metroOn=true;
+  document.getElementById('metroBtn').textContent='⏸ 暂停节拍';
+  const ms=60000/bpm;
+  metroTick=setInterval(()=>{
+    click(curBeat===0); flashDot(curBeat);
+    curBeat=(curBeat+1)%beats;
+  },ms);
+}
+function stopMetro(){
+  metroOn=false;
+  document.getElementById('metroBtn').textContent='▶ 开始节拍';
+  clearInterval(metroTick);
+  document.querySelectorAll('.beat-dot').forEach(d=>d.classList.remove('active'));
+}
+function toggleMetro(){ metroOn?stopMetro():startMetro(); }
+function toggleSound(el){ soundOn=!soundOn; el.classList.toggle('on',soundOn); }
+function toggleSync(el){ syncOn=!syncOn; el.classList.toggle('on',syncOn); }
+
+function updateBreath(){
+  iSec=Math.max(1,+document.getElementById('inhaleIn').value||4);
+  eSec=Math.max(1,+document.getElementById('exhaleIn').value||6);
+  document.getElementById('inhaleDisp').textContent=iSec;
+  document.getElementById('exhaleDisp').textContent=eSec;
+}
+
+function setCircle(pct, ph){
+  const el=document.getElementById('prog');
+  el.style.strokeDashoffset=CIRC*(1-pct);
+  el.style.stroke=ph==='inhale'?'var(--inhale)':'var(--exhale)';
+}
+function setBreathUI(ph, n){
+  const cEl=document.getElementById('bCount');
+  const pEl=document.getElementById('bPhase');
+  const tip=document.getElementById('tip');
+  cEl.textContent=n;
+  if(ph==='inhale'){
+    const p=Math.round((iSec-n+1)/iSec*100);
+    cEl.style.color='var(--inhale)';
+    pEl.style.color='var(--inhale)';
+    pEl.textContent='吸气 ↑';
+    setCircle((iSec-n+1)/iSec,'inhale');
+    document.getElementById('iBar').style.width=p+'%';
+    document.getElementById('iPct').textContent=p+'%';
+    document.getElementById('eBar').style.width='0%';
+    document.getElementById('ePct').textContent='0%';
+    tip.textContent=`吸气中——还剩 ${n} 秒，缓慢深吸，扩展横膈膜。`;
+  } else {
+    const p=Math.round(n/eSec*100);
+    cEl.style.color='var(--exhale)';
+    pEl.style.color='var(--exhale)';
+    pEl.textContent='呼气 ↓';
+    setCircle(n/eSec,'exhale');
+    document.getElementById('iBar').style.width='100%';
+    document.getElementById('iPct').textContent='100%';
+    document.getElementById('eBar').style.width=p+'%';
+    document.getElementById('ePct').textContent=p+'%';
+    tip.textContent=`呼气中——第 ${n} 秒（共 ${eSec} 秒），保持气息稳定，支撑声音共鸣。`;
+  }
+}
+function runCycle(){
+  phase='inhale'; cnt=iSec;
+  function tick(){
+    if(!breathOn) return;
+    setBreathUI(phase, cnt);
+    if(phase==='inhale'){
+      if(cnt<=1){ phase='exhale'; cnt=1; }
+      else cnt--;
+    } else {
+      if(cnt>=eSec){ phase='inhale'; cnt=iSec; }
+      else cnt++;
+    }
+    breathTimer=setTimeout(tick,1000);
+  }
+  tick();
+}
+function startBreath(){
+  breathOn=true;
+  document.getElementById('breathBtn').textContent='⏸ 暂停呼吸';
+  runCycle();
+}
+function stopBreath(){
+  breathOn=false;
+  document.getElementById('breathBtn').textContent='🌬️ 开始呼吸';
+  clearTimeout(breathTimer);
+  document.getElementById('bCount').textContent='—';
+  document.getElementById('bPhase').textContent='已暂停';
+  document.getElementById('bPhase').style.color='var(--muted)';
+  document.getElementById('bCount').style.color='var(--muted)';
+  setCircle(0,'inhale');
+  ['iBar','eBar'].forEach(id=>document.getElementById(id).style.width='0%');
+  ['iPct','ePct'].forEach(id=>document.getElementById(id).textContent='0%');
+  document.getElementById('tip').textContent='按「开始呼吸」进行气息辅助训练，搭配节拍器效果更佳。';
+}
+function toggleBreath(){ breathOn?stopBreath():startBreath(); }
+function stopAll(){ stopMetro(); stopBreath(); }
+
+buildDots();
+updateBPM(120);
+updateBreath();
+</script>
+</body>
+</html>
